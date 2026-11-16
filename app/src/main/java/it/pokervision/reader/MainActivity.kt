@@ -32,6 +32,10 @@ class MainActivity : ComponentActivity() {
     private var running = true
     private var lastRequest = 0L
     private var latest = ""
+    private var lastPot: String? = null
+    private var lastCall: String? = null
+    private var lastPotAt = 0L
+    private var lastCallAt = 0L
     private lateinit var status: TextView
     private lateinit var pot: TextView
     private lateinit var call: TextView
@@ -95,23 +99,53 @@ class MainActivity : ComponentActivity() {
                 val image = InputImage.fromMediaImage(media, proxy.imageInfo.rotationDegrees)
                 recognizer.process(image)
                     .addOnSuccessListener { result ->
-                        val lines = result.textBlocks.flatMap { it.lines }.map { it.text }
-                        val raw = lines.joinToString("\n")
+                        val items = result.textBlocks.flatMap { it.lines }
+                        val raw = items.joinToString("\\n") { it.text }
                         latest = raw
-                        val amounts = """[€$]?\s*([0-9]+[,.][0-9]{1,2})"""
-                        val potLine = lines.firstOrNull { it.contains("piatto", true) || it.contains("pot:", true) }
-                        val callLine = lines.firstOrNull { it.contains("chiama", true) && it.contains("€") }
-                        val amountRegex = Regex(amounts)
-                        val potValue = potLine?.let { amountRegex.find(it)?.groupValues?.getOrNull(1) }
-                        val callValue = callLine?.let { amountRegex.find(it)?.groupValues?.getOrNull(1) }
-                        val actionText = lines.firstOrNull {
-                            it.trim().equals("Fold", true) || it.trim().equals("Check", true) ||
-                            it.contains("Rilancia", true) || it.contains("Chiama", true)
+                        val amount = Regex("""[€$]?\\s*(\\d{1,5}[,.]\\d{1,2})""")
+                        val w = image.width.toFloat().coerceAtLeast(1f)
+                        val h = image.height.toFloat().coerceAtLeast(1f)
+                        fun nearbyAmount(keyword: Regex, region: (Float, Float) -> Boolean): String? {
+                            val anchors = items.filter { line ->
+                                val rect = line.boundingBox ?: return@filter false
+                                keyword.containsMatchIn(line.text) &&
+                                    region(rect.exactCenterX() / w, rect.exactCenterY() / h)
+                            }
+                            for (anchor in anchors) {
+                                amount.find(anchor.text)?.groupValues?.getOrNull(1)?.let { return it }
+                                val ar = anchor.boundingBox ?: continue
+                                val neighbor = items.asSequence().filter { it !== anchor }.mapNotNull { line ->
+                                    val rect = line.boundingBox ?: return@mapNotNull null
+                                    val cx = rect.exactCenterX() / w
+                                    val cy = rect.exactCenterY() / h
+                                    if (!region(cx, cy)) return@mapNotNull null
+                                    val dx = kotlin.math.abs(rect.exactCenterX() - ar.exactCenterX()) / w
+                                    val dy = kotlin.math.abs(rect.exactCenterY() - ar.exactCenterY()) / h
+                                    val v = amount.find(line.text)?.groupValues?.getOrNull(1) ?: return@mapNotNull null
+                                    if (dx > .22f || dy > .07f) return@mapNotNull null
+                                    Pair(v, dx + dy * 2f)
+                                }.minByOrNull { it.second }
+                                if (neighbor != null) return neighbor.first
+                            }
+                            return null
                         }
-                        pot.text = if (potValue != null) "€$potValue" else "—"
-                        call.text = if (callValue != null) "€$callValue" else "—"
-                        action.text = actionText ?: "—"
-                        phase.text = "Carte: non ancora riconosciute (OCR solo testo)"
+                        // Exclude log/chat and action buttons when searching pot.
+                        val potValue = nearbyAmount(Regex("(?i)piatto|\\\\bpot\\\\b")) { x,y ->
+                            x in .24f.. .78f && y in .12f.. .58f
+                        }
+                        // Locate the call button exclusively in lower-right of camera frame.
+                        val callValue = nearbyAmount(Regex("(?i)chiama|call")) { x,y ->
+                            x in .54f..1f && y in .70f..1f
+                        }
+                        val nowDisplay = SystemClock.elapsedRealtime()
+                        if (potValue != null) { lastPot = potValue; lastPotAt = nowDisplay }
+                        if (callValue != null) { lastCall = callValue; lastCallAt = nowDisplay }
+                        pot.text = if (nowDisplay - lastPotAt < 1800 && lastPot != null)
+                            "€${lastPot}" else "—"
+                        call.text = if (nowDisplay - lastCallAt < 1800 && lastCall != null)
+                            "€${lastCall}" else "—"
+                        action.text = "Non classificata"
+                        phase.text = "Carte: riconoscimento dedicato non disponibile"
                         ocr.text = raw
                         status.text = "Lettura attiva • OCR circa 3 volte/s"
                     }
