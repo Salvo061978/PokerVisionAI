@@ -34,6 +34,8 @@ class MainActivity : ComponentActivity() {
     private var latest = ""
     private lateinit var status: TextView
     private lateinit var pot: TextView
+    private lateinit var call: TextView
+    private lateinit var action: TextView
     private lateinit var phase: TextView
     private lateinit var ocr: TextView
 
@@ -46,6 +48,8 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         status = findViewById(R.id.status)
         pot = findViewById(R.id.pot)
+        call = findViewById(R.id.call)
+        action = findViewById(R.id.action)
         phase = findViewById(R.id.phase)
         ocr = findViewById(R.id.ocr)
         findViewById<Button>(R.id.toggle).setOnClickListener { button ->
@@ -94,11 +98,21 @@ class MainActivity : ComponentActivity() {
                         val lines = result.textBlocks.flatMap { it.lines }.map { it.text }
                         val raw = lines.joinToString("\n")
                         latest = raw
-                        val potValue = Regex("(?:Piatto|Pot)\\s*[:：]?\\s*[€$]?\\s*([0-9]+[.,][0-9]{1,2})", RegexOption.IGNORE_CASE)
-                            .find(raw)?.groupValues?.get(1)
-                        pot.text = "Piatto OCR: " + (potValue ?: "non rilevato")
-                        phase.text = "Carte e fase: verifica manuale (v0.1)"
-                        ocr.text = raw.ifBlank { "Nessun testo individuato. Avvicina il telefono e metti a fuoco." }
+                        val amounts = "[€\\$]?\\\\s*([0-9]+[,.][0-9]{1,2})"
+                        val potLine = lines.firstOrNull { it.contains("piatto", true) || it.contains("pot:", true) }
+                        val callLine = lines.firstOrNull { it.contains("chiama", true) && it.contains("€") }
+                        val amountRegex = Regex(amounts)
+                        val potValue = potLine?.let { amountRegex.find(it)?.groupValues?.getOrNull(1) }
+                        val callValue = callLine?.let { amountRegex.find(it)?.groupValues?.getOrNull(1) }
+                        val actionText = lines.firstOrNull {
+                            it.trim().equals("Fold", true) || it.trim().equals("Check", true) ||
+                            it.contains("Rilancia", true) || it.contains("Chiama", true)
+                        }
+                        pot.text = if (potValue != null) "€$potValue" else "—"
+                        call.text = if (callValue != null) "€$callValue" else "—"
+                        action.text = actionText ?: "—"
+                        phase.text = "Carte: non ancora riconosciute (OCR solo testo)"
+                        ocr.text = raw
                         status.text = "Lettura attiva • OCR circa 3 volte/s"
                     }
                     .addOnFailureListener { e -> status.text = "Errore OCR: ${e.localizedMessage}" }
