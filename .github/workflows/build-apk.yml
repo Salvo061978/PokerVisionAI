@@ -5,7 +5,7 @@ on:
     branches: [main, master]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -16,10 +16,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Configura SDK Android
-        uses: android-actions/setup-android@v3
-      - name: Installa Android SDK 35
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Usa SDK Android preinstallato
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la "$ANDROID_HOME"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          fi
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          "$SDKMANAGER" --version
+      - name: Installa SDK 35
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - name: Configura Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -31,3 +41,4 @@ jobs:
         with:
           name: PokerVisionAI-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
