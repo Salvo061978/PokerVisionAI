@@ -102,7 +102,7 @@ class MainActivity : ComponentActivity() {
                         val items = result.textBlocks.flatMap { it.lines }
                         val raw = items.joinToString("\\n") { it.text }
                         latest = raw
-                        val amount = Regex("""[€$]?\\s*(\\d{1,5}[,.]\\d{1,2})""")
+                        val amount = Regex("""[€$]?\s*(\d{1,5}[,.]\d{1,2})""")
                         val w = image.width.toFloat().coerceAtLeast(1f)
                         val h = image.height.toFloat().coerceAtLeast(1f)
                         fun nearbyAmount(keyword: Regex, region: (Float, Float) -> Boolean): String? {
@@ -130,12 +130,12 @@ class MainActivity : ComponentActivity() {
                             return null
                         }
                         // Exclude log/chat and action buttons when searching pot.
-                        val potValue = nearbyAmount(Regex("(?i)piatto|\\\\bpot\\\\b")) { x,y ->
-                            x in .24f.. .78f && y in .12f.. .58f
+                        val potValue = nearbyAmount(Regex("""(?i)piatto|\bpot\b""")) { x,y ->
+                            x in 0.24f..0.78f && y in 0.12f..0.58f
                         }
                         // Locate the call button exclusively in lower-right of camera frame.
                         val callValue = nearbyAmount(Regex("(?i)chiama|call")) { x,y ->
-                            x in .54f..1f && y in .70f..1f
+                            x in 0.54f..1f && y in 0.70f..1f
                         }
                         val nowDisplay = SystemClock.elapsedRealtime()
                         if (potValue != null) { lastPot = potValue; lastPotAt = nowDisplay }
