@@ -98,7 +98,7 @@ class MainActivity : ComponentActivity() {
                         val lines = result.textBlocks.flatMap { it.lines }.map { it.text }
                         val raw = lines.joinToString("\n")
                         latest = raw
-                        val amounts = "[€\\$]?\\\\s*([0-9]+[,.][0-9]{1,2})"
+                        val amounts = """[€$]?\s*([0-9]+[,.][0-9]{1,2})"""
                         val potLine = lines.firstOrNull { it.contains("piatto", true) || it.contains("pot:", true) }
                         val callLine = lines.firstOrNull { it.contains("chiama", true) && it.contains("€") }
                         val amountRegex = Regex(amounts)
