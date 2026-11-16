@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#0B1420">
+    <androidx.camera.view.PreviewView android:id="@+id/preview" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <View android:id="@+id/aim" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@android:color/transparent"/>
+    <LinearLayout android:layout_width="330dp" android:layout_height="match_parent" android:layout_gravity="right" android:orientation="vertical" android:padding="12dp" android:background="#E8111D2B">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="POKER VISION 0.1" android:textSize="22sp" android:textColor="#FFFFFF" android:textStyle="bold" />
+        <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Inizializzazione..." android:textColor="#80E6C8" android:paddingTop="8dp" />
+        <TextView android:id="@+id/pot" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Piatto: —" android:textSize="20sp" android:textColor="#FFFFFF" android:paddingTop="12dp" />
+        <TextView android:id="@+id/phase" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Board: da verificare" android:textColor="#FFFFFF" android:paddingTop="8dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="OCR rilevato (lettura sperimentale):" android:textColor="#CCCCCC" android:paddingTop="14dp" />
+        <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+          <TextView android:id="@+id/ocr" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="13sp" android:textIsSelectable="true"/>
+        </ScrollView>
+        <Button android:id="@+id/toggle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pausa lettura"/>
+        <Button android:id="@+id/save" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Salva rilevazione"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Solo lettura e registrazione. Nessun consiglio di gioco live." android:textColor="#BBBBBB" android:textSize="11sp"/>
+    </LinearLayout>
+</FrameLayout>
